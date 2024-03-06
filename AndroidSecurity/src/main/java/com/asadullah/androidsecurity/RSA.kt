@@ -22,17 +22,14 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.NoSuchAlgorithmException
-import java.security.PrivateKey
-import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.util.Calendar
 import java.security.cert.X509Certificate
-import java.security.spec.AlgorithmParameterSpec
 import javax.crypto.Cipher
 import javax.security.auth.x500.X500Principal
 
-class AsymmetricEncryption {
+class RSA {
 
     private val algorithm = "RSA"
     private val blockMechanism = "ECB"

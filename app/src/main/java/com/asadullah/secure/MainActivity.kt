@@ -1,7 +1,6 @@
 package com.asadullah.secure
 
 import android.os.Bundle
-import android.security.keystore.KeyProperties
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,10 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.asadullah.androidsecurity.AsymmetricEncryption
-import com.asadullah.androidsecurity.convertToBase64String
+import com.asadullah.androidsecurity.AES
+import com.asadullah.androidsecurity.RSA
 import com.asadullah.secure.ui.theme.AndroidSecurityTheme
-import javax.crypto.Cipher
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,11 +34,21 @@ class MainActivity : ComponentActivity() {
 
 fun mainFunctionality() {
 
-    val asymmetricEncryption = AsymmetricEncryption()
-    val encryptedText = asymmetricEncryption.encrypt("I solemnly swear that I am up to no good.")
+    val message = "I solemnly swear that I am up to no good."
+
+    val rsa = RSA()
+    val encryptedText = rsa.encrypt(message)
     println(encryptedText)
-    val decryptedText = asymmetricEncryption.decrypt(encryptedText)
+    val decryptedText = rsa.decrypt(encryptedText)
     println(decryptedText)
+
+    val aes = AES()
+    val secretKey = aes.generateSecretKey()
+    val initializationVector = aes.generateRandomIV()
+    val aesEncryptedText = aes.encryptString(secretKey, initializationVector, message)
+    println(aesEncryptedText)
+    val aesDecryptedText = aes.decryptString(secretKey, initializationVector, aesEncryptedText)
+    println(aesDecryptedText)
 }
 
 @Composable
