@@ -60,6 +60,8 @@ class RSA {
         return kpg.generateKeyPair()
     }
 
+    fun getPublicKey() = keyPair.public.encoded.convertToBase64String()
+
     fun encrypt(plainText: String): String {
         val cipher = Cipher.getInstance(transformation)
         cipher.init(Cipher.ENCRYPT_MODE, keyPair.public)
