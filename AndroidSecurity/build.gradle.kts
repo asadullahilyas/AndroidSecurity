@@ -1,6 +1,20 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("maven-publish")
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("maven") {
+                from (components["release"])
+                groupId = "com.github.asadullahilyas"
+                artifactId = "AndroidSecurity"
+                version = "0.0.1"
+            }
+        }
+    }
 }
 
 android {
