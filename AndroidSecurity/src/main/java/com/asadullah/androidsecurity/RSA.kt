@@ -63,17 +63,29 @@ class RSA {
     fun getPublicKey() = keyPair.public.encoded.convertToBase64String()
 
     fun encrypt(plainText: String): String {
+
+        if (plainText.isEmpty()) return ""
+
         val cipher = Cipher.getInstance(transformation)
         cipher.init(Cipher.ENCRYPT_MODE, keyPair.public)
-        val encryptedByteArray = cipher.doFinal(plainText.toByteArray())
-        return encryptedByteArray.convertToBase64String()
+        return plainText
+            .chunked(245)
+            .joinToString("\\|/") { chunk ->
+                cipher.doFinal(chunk.toByteArray()).convertToBase64String()
+            }
     }
 
     fun decrypt(encryptedText: String): String {
+
+        if (encryptedText.isEmpty()) return ""
+
         val cipher = Cipher.getInstance(transformation)
         cipher.init(Cipher.DECRYPT_MODE, keyPair.private)
-        val decryptedByteArray = cipher.doFinal(encryptedText.convertToBase64ByteArray())
-        return String(decryptedByteArray)
+        return encryptedText
+            .split("\\|/")
+            .joinToString("") { chunk ->
+                String(cipher.doFinal(chunk.convertToBase64ByteArray()))
+            }
     }
 
     @Throws(IOException::class, OperatorCreationException::class, CertificateException::class)
