@@ -22,6 +22,8 @@ import javax.crypto.spec.SecretKeySpec
 
 class AES {
 
+    private val chunkSize = 8192
+
     private val algo = KeyProperties.KEY_ALGORITHM_AES
     private val keySize = 256
     private val cipherTransformation = "${KeyProperties.KEY_ALGORITHM_AES}/${KeyProperties.BLOCK_MODE_CBC}/${KeyProperties.ENCRYPTION_PADDING_PKCS7}"//"AES/CBC/PKCS7Padding"
@@ -64,12 +66,6 @@ class AES {
         val keyStore = KeyStore.getInstance("AndroidKeyStore")
         keyStore.load(null)
         return keyStore.getKey(alias, null) as SecretKey?
-    }
-
-    fun generateRandomIV(): String {
-        val random = SecureRandom()
-        val generated: ByteArray = random.generateSeed(16)
-        return generated.convertToBase64String()
     }
 
     fun encryptString(secretKey: String, text: String): String {
@@ -132,7 +128,7 @@ class AES {
 
         val cos = CipherOutputStream(fos, cipher)
         var b: Int
-        val d = ByteArray(1024)
+        val d = ByteArray(chunkSize)
         while (fis.read(d).also { b = it } != -1) {
             cos.write(d, 0, b)
         }
@@ -162,7 +158,7 @@ class AES {
 
         val cis = CipherInputStream(fis, cipher)
         var b: Int
-        val d = ByteArray(1024)
+        val d = ByteArray(chunkSize)
         while (cis.read(d).also { b = it } != -1) {
             fos.write(d, 0, b)
         }
@@ -184,28 +180,30 @@ class AES {
     }
 
     private fun replaceFirstLineWithEmptyBytes(file: File) {
-        var isFirstLine = true
-        val outputStream = ByteArrayOutputStream()
+        val tempFile = File(file.parentFile, "temp")
+        tempFile.delete()
+        tempFile.createNewFile()
+        val outputStream = tempFile.outputStream()
+
+        val buffer = ByteArray(chunkSize)
 
         file.inputStream().use { inputStream ->
             var nextByte: Int = inputStream.read()
             while (nextByte != -1) {
-                if (isFirstLine && (nextByte == '\n'.code || nextByte == '\r'.code)) {
-                    isFirstLine = false
-
-                    // AI: Note that we're reading one byte again because we want to skip the \n or \r byte
-                    // and not add them in our output stream.
-                    nextByte = inputStream.read()
-                }
-                if (!isFirstLine) {
-                    outputStream.write(nextByte)
+                if (nextByte == '\n'.code || nextByte == '\r'.code) {
+                    break
                 }
                 nextByte = inputStream.read()
             }
-        }
 
-        FileOutputStream(file).use { fileOutputStream ->
-            fileOutputStream.write(outputStream.toByteArray())
+            var b: Int
+            while (inputStream.read(buffer).also { b = it } != -1) {
+                outputStream.write(buffer, 0, b)
+            }
         }
+        outputStream.close()
+
+        tempFile.copyTo(file, overwrite = true)
+        tempFile.delete()
     }
 }

@@ -179,7 +179,7 @@ fun PickDocument() {
 
     Column {
         ElevatedButton(onClick = {
-            launcher.launch(arrayOf("application/pdf"))
+            launcher.launch(arrayOf("*/*"))
         }) {
             Text(text = "Select Document")
         }
