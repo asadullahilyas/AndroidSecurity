@@ -147,9 +147,9 @@ class AES {
         val iv = readFirstLine(encryptedFile)
 
         // Removing IV from top of the file to keep the actual encrypted content in file.
-        replaceFirstLineWithEmptyBytes(encryptedFile)
+        val encryptedFileWithoutIV = replaceFirstLineWithEmptyBytes(encryptedFile)
 
-        val fis = FileInputStream(encryptedFile)
+        val fis = FileInputStream(encryptedFileWithoutIV)
         val fos = FileOutputStream(outputFile)
 
         val cipher = Cipher.getInstance(cipherTransformation)
@@ -165,6 +165,9 @@ class AES {
         fos.flush()
         fos.close()
         cis.close()
+        fis.close()
+
+        encryptedFileWithoutIV.delete()
     }
 
     private fun readFirstLine(file: File): ByteArray {
@@ -179,11 +182,11 @@ class AES {
         return outputStream.toByteArray()
     }
 
-    private fun replaceFirstLineWithEmptyBytes(file: File) {
-        val tempFile = File(file.parentFile, "temp")
-        tempFile.delete()
-        tempFile.createNewFile()
-        val outputStream = tempFile.outputStream()
+    private fun replaceFirstLineWithEmptyBytes(file: File): File {
+        val encryptedFileWithoutIV = File(file.parentFile, "encrypted_file_without_iv")
+        encryptedFileWithoutIV.delete()
+        encryptedFileWithoutIV.createNewFile()
+        val outputStream = encryptedFileWithoutIV.outputStream()
 
         val buffer = ByteArray(chunkSize)
 
@@ -203,7 +206,6 @@ class AES {
         }
         outputStream.close()
 
-        tempFile.copyTo(file, overwrite = true)
-        tempFile.delete()
+        return encryptedFileWithoutIV
     }
 }
