@@ -1,8 +1,6 @@
 package com.asadullah.secure.ui.screens
 
 import android.widget.Toast
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,7 +23,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.asadullah.androidsecurity.AES
 import com.asadullah.androidsecurity.RSA
 import com.asadullah.secure.MainActivity
 import com.asadullah.secure.Screen
@@ -62,7 +59,7 @@ fun PlainTextScreen(
 
         val onValueChangeEncrypt: (String) -> Unit = {
             textToEncrypt = it
-            output = rsa.encrypt(it)
+            output = rsa.encryptString(it)
         }
 
         CryptoTextField(
@@ -80,7 +77,7 @@ fun PlainTextScreen(
         val onValueChangeDecrypt: (String) -> Unit = {
             textToDecrypt = it
             try {
-                output = rsa.decrypt(it)
+                output = rsa.decryptString(it)
             } catch (e: IllegalArgumentException) {
                 Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
             }
