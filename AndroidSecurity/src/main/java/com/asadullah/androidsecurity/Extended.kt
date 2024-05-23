@@ -1,11 +1,9 @@
 package com.asadullah.androidsecurity
 
-import java.util.Base64
+fun String.decodeHex(): ByteArray {
+    check(length % 2 == 0) { "Must have an even length" }
 
-fun ByteArray.convertToBase64String(): String {
-    return Base64.getEncoder().encodeToString(this)
-}
-
-fun String.convertToBase64ByteArray(): ByteArray {
-    return Base64.getDecoder().decode(this)
+    return chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
 }
