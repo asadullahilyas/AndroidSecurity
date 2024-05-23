@@ -58,9 +58,9 @@ class MainActivity : ComponentActivity() {
         val message = "I solemnly swear that I am up to no good."
 
         val rsa = RSA()
-        val encryptedText = rsa.encrypt(message)
+        val encryptedText = rsa.encryptString(message)
         println(encryptedText)
-        val decryptedText = rsa.decrypt(encryptedText)
+        val decryptedText = rsa.decryptString(encryptedText)
         println(decryptedText)
 
         val aes = AES()

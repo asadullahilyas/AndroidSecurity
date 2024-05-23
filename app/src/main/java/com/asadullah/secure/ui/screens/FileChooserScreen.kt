@@ -159,17 +159,17 @@ fun PickDocument() {
             context.contentResolver.openInputStream(uri).use {
                 it?.copyTo(originalFile.outputStream())
             }
-            progressState = "Encrypting file..."
+            val fileName = Date().time.toString()
+            val encryptedFile = File(encryptedFilesDir, "$fileName.crypt")
             val aes = AES()
             aes.generateAndStoreSecretKey("Champion")
             val secretKey = aes.getSecretKey("Champion")
-            val fileName = Date().time.toString()
-            val encryptedFile = File(encryptedFilesDir, "$fileName.crypt")
+            progressState = "Encrypting file..."
             aes.encryptFile(secretKey!!, originalFile, encryptedFile)
             progressState = "Encryption successful"
             delay(1000L)
-            progressState = "Decrypting file..."
             val decryptedFile = File(encryptedFilesDir, "decrypted_$fileName")
+            progressState = "Decrypting file..."
             aes.decryptFile(secretKey, encryptedFile, decryptedFile)
             progressState = "Decryption successful"
             delay(3000L)

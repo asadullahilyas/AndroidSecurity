@@ -2,6 +2,10 @@ package com.asadullah.androidsecurity
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import com.asadullah.handyutils.chunked
+import com.asadullah.handyutils.decodeFromBase64String
+import com.asadullah.handyutils.encodeToBase64String
+import com.asadullah.handyutils.findWithObject
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -17,15 +21,20 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.math.BigInteger
+import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.NoSuchAlgorithmException
+import java.security.PrivateKey
+import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.cert.CertificateException
-import java.util.Calendar
 import java.security.cert.X509Certificate
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
+import java.util.Calendar
 import javax.crypto.Cipher
 import javax.security.auth.x500.X500Principal
 
@@ -33,12 +42,19 @@ class RSA {
 
     private val algorithm = "RSA"
     private val blockMechanism = "ECB"
-    private val padding = KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1
 
-    private val transformation = "$algorithm/$blockMechanism/$padding"
+    private val transformation: String
 
-    private val keyPair: KeyPair by lazy {
-        generateKeyPair()
+    private val keyPair: KeyPair
+
+    constructor(padding: String = KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1) {
+        transformation = "$algorithm/$blockMechanism/$padding"
+        keyPair = generateKeyPair()
+    }
+
+    constructor(publicKeyStr: String, privateKeyStr: String, padding: String = KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1) {
+        transformation = "$algorithm/$blockMechanism/$padding"
+        keyPair = generateKeyPair(publicKeyStr, privateKeyStr)
     }
 
     private fun generateKeyPair(): KeyPair {
@@ -60,9 +76,35 @@ class RSA {
         return kpg.generateKeyPair()
     }
 
-    fun getPublicKey() = keyPair.public.encoded.convertToBase64String()
+    private fun getPublicKeyFromString(publicKeyStr: String): PublicKey {
+        val publicKeyByteArray = publicKeyStr.decodeFromBase64String()
+        val keySpec = X509EncodedKeySpec(publicKeyByteArray)
+        val keyFactory = KeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
+        return keyFactory.generatePublic(keySpec)
+    }
 
-    fun encrypt(plainText: String): String {
+    private fun getPrivateKeyFromString(privateKeyStr: String): PrivateKey {
+        val privateKeyByteArray = privateKeyStr.decodeFromBase64String()
+        val keySpec = PKCS8EncodedKeySpec(privateKeyByteArray)
+        val keyFactory = KeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
+        return keyFactory.generatePrivate(keySpec)
+    }
+
+    private fun generateKeyPair(publicKeyStr: String, privateKeyStr: String): KeyPair {
+        return generateKeyPair(
+            getPublicKeyFromString(publicKeyStr),
+            getPrivateKeyFromString(privateKeyStr)
+        )
+    }
+
+    private fun generateKeyPair(publicKey: PublicKey, privateKey: PrivateKey): KeyPair {
+        return KeyPair(publicKey, privateKey)
+    }
+
+    fun getPublicKey() = keyPair.public.encoded.encodeToBase64String()
+    fun getPrivateKey() = keyPair.private.encoded.encodeToBase64String()
+
+    fun encryptString(plainText: String): String {
 
         if (plainText.isEmpty()) return ""
 
@@ -71,11 +113,11 @@ class RSA {
         return plainText
             .chunked(245)
             .joinToString("\\|/") { chunk ->
-                cipher.doFinal(chunk.toByteArray()).convertToBase64String()
+                cipher.doFinal(chunk.toByteArray()).encodeToBase64String()
             }
     }
 
-    fun decrypt(encryptedText: String): String {
+    fun decryptString(encryptedText: String): String {
 
         if (encryptedText.isEmpty()) return ""
 
@@ -84,8 +126,32 @@ class RSA {
         return encryptedText
             .split("\\|/")
             .joinToString("") { chunk ->
-                String(cipher.doFinal(chunk.convertToBase64ByteArray()))
+                String(cipher.doFinal(chunk.decodeFromBase64String()))
             }
+    }
+
+    fun encryptData(plainBytes: ByteArray): ByteArray {
+        val cipher = Cipher.getInstance(transformation)
+        cipher.init(Cipher.ENCRYPT_MODE, keyPair.public)
+        return plainBytes
+            .toTypedArray()
+            .chunked(512)
+            .map { chunk ->
+                cipher.doFinal(chunk.toByteArray())
+            }
+            .flatten()
+    }
+
+    fun decryptData(encryptedBytes: ByteArray): ByteArray {
+        val cipher = Cipher.getInstance(transformation)
+        cipher.init(Cipher.DECRYPT_MODE, keyPair.private)
+        return encryptedBytes
+            .toTypedArray()
+            .chunked(512)
+            .map { chunk ->
+                cipher.doFinal(chunk.toByteArray())
+            }
+            .flatten()
     }
 
     @Throws(IOException::class, OperatorCreationException::class, CertificateException::class)
@@ -152,5 +218,23 @@ class RSA {
             inputStream?.close()
         }
         return keystore
+    }
+
+    fun List<ByteArray>.flatten(): ByteArray {
+
+        val totalSize = fold(0) { acc, byteArray ->
+            acc + byteArray.size
+        }
+
+        var i = 0
+        val resultantArray = ByteArray(totalSize)
+        forEach { byteArray ->
+            byteArray.forEach { byte ->
+                resultantArray[i] = byte
+                i++
+            }
+        }
+
+        return resultantArray
     }
 }
