@@ -69,12 +69,16 @@ fun PickImage() {
             val secretKey = aes.getSecretKey("Champion")
             val fileName = Date().time.toString()
             val encryptedFile = File(encryptedFilesDir, "$fileName.crypt")
-            aes.encryptFile(secretKey!!, originalFile, encryptedFile)
+            aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
+                println(progress)
+            }
             progressState = "Encryption successful"
             delay(1000L)
             progressState = "Decrypting file..."
             val decryptedFile = File(encryptedFilesDir, "decrypted_$fileName")
-            aes.decryptFile(secretKey, encryptedFile, decryptedFile)
+            aes.decryptFile(secretKey, encryptedFile, decryptedFile) { progress ->
+                println(progress)
+            }
             progressState = "Decryption successful"
             delay(3000L)
             progressState = ""
@@ -117,12 +121,16 @@ fun PickVideo() {
             val secretKey = aes.getSecretKey("Champion")
             val fileName = Date().time.toString()
             val encryptedFile = File(encryptedFilesDir, "$fileName.crypt")
-            aes.encryptFile(secretKey!!, originalFile, encryptedFile)
+            aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
+                println(progress)
+            }
             progressState = "Encryption successful"
             delay(1000L)
             progressState = "Decrypting file..."
             val decryptedFile = File(encryptedFilesDir, "decrypted_$fileName")
-            aes.decryptFile(secretKey, encryptedFile, decryptedFile)
+            aes.decryptFile(secretKey, encryptedFile, decryptedFile) { progress ->
+                println(progress)
+            }
             progressState = "Decryption successful"
             delay(3000L)
             progressState = ""
@@ -165,12 +173,16 @@ fun PickDocument() {
             aes.generateAndStoreSecretKey("Champion")
             val secretKey = aes.getSecretKey("Champion")
             progressState = "Encrypting file..."
-            aes.encryptFile(secretKey!!, originalFile, encryptedFile)
+            aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
+                println(progress)
+            }
             progressState = "Encryption successful"
             delay(1000L)
             val decryptedFile = File(encryptedFilesDir, "decrypted_$fileName")
             progressState = "Decrypting file..."
-            aes.decryptFile(secretKey, encryptedFile, decryptedFile)
+            aes.decryptFile(secretKey, encryptedFile, decryptedFile) { progress ->
+                println(progress)
+            }
             progressState = "Decryption successful"
             delay(3000L)
             progressState = ""

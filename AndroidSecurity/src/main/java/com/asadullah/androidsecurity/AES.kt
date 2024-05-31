@@ -134,9 +134,13 @@ class AES(
      * for decryption, then you don't have to worry about it.
      */
     @Throws(IOException::class, NoSuchAlgorithmException::class, NoSuchPaddingException::class, InvalidKeyException::class)
-    fun encryptFile(secretKey: String, file: File, outputFile: File? = null): File {
-        val realSecretKey = convertStringToKey(secretKey)
-        return encryptFile(realSecretKey, file, outputFile)
+    fun encryptFile(secretKey: String, file: File, outputFile: File? = null, progressListener: ((Float) -> Unit)? = null): File {
+        return encryptFile(
+            secretKey = convertStringToKey(secretKey),
+            file = file,
+            outputFile = outputFile,
+            progressListener = progressListener
+        )
     }
 
     /***
@@ -145,9 +149,13 @@ class AES(
      * will try to decrypt the bytes using the key provided in the function.
      */
     @Throws(IOException::class, NoSuchAlgorithmException::class, NoSuchPaddingException::class, InvalidKeyException::class)
-    fun decryptFile(secretKey: String, encryptedFile: File, outputFile: File) {
-        val realSecretKey = convertStringToKey(secretKey)
-        decryptFile(realSecretKey, encryptedFile, outputFile)
+    fun decryptFile(secretKey: String, encryptedFile: File, outputFile: File, progressListener: ((Float) -> Unit)? = null) {
+        decryptFile(
+            secretKey = convertStringToKey(secretKey),
+            encryptedFile = encryptedFile,
+            outputFile = outputFile,
+            progressListener = progressListener
+        )
     }
 
     /**
@@ -157,11 +165,13 @@ class AES(
      * using the `fun decryptFile(secretKey: ByteArray, encryptedFile: File, outputFile: File)`
      * for decryption, then you don't have to worry about it.
      */
-    fun encryptFile(secretKey: ByteArray, file: File, outputFile: File? = null): File {
+    @Throws(IOException::class, NoSuchAlgorithmException::class, NoSuchPaddingException::class, InvalidKeyException::class)
+    fun encryptFile(secretKey: ByteArray, file: File, outputFile: File? = null, progressListener: ((Float) -> Unit)? = null): File {
         return encryptFile(
             secretKey = convertByteArrayToSecretKey(secretKey),
             file = file,
-            outputFile = outputFile
+            outputFile = outputFile,
+            progressListener = progressListener
         )
     }
 
@@ -170,11 +180,13 @@ class AES(
      * IV. The rest of the bytes are considered to be the encrypted bytes and it
      * will try to decrypt the bytes using the key provided in the function.
      */
-    fun decryptFile(secretKey: ByteArray, encryptedFile: File, outputFile: File) {
+    @Throws(IOException::class, NoSuchAlgorithmException::class, NoSuchPaddingException::class, InvalidKeyException::class)
+    fun decryptFile(secretKey: ByteArray, encryptedFile: File, outputFile: File, progressListener: ((Float) -> Unit)? = null) {
         decryptFile(
             secretKey = convertByteArrayToSecretKey(secretKey),
             encryptedFile = encryptedFile,
-            outputFile = outputFile
+            outputFile = outputFile,
+            progressListener = progressListener
         )
     }
 
@@ -186,12 +198,14 @@ class AES(
      * for decryption, then you don't have to worry about it.
      */
     @Throws(IOException::class, NoSuchAlgorithmException::class, NoSuchPaddingException::class, InvalidKeyException::class)
-    fun encryptFile(secretKey: SecretKey, file: File, outputFile: File? = null): File {
+    fun encryptFile(secretKey: SecretKey, file: File, outputFile: File? = null, progressListener: ((Float) -> Unit)? = null): File {
 
         val encryptedFile = outputFile ?: File(file.parentFile, "${file.name}.crypt")
 
         val fis = FileInputStream(file)
         val fos = FileOutputStream(encryptedFile)
+
+        val contentLength = file.length()
 
         val cipher = Cipher.getInstance(cipherTransformation)
         cipher.init(Cipher.ENCRYPT_MODE, secretKey)
@@ -201,10 +215,13 @@ class AES(
         fos.write(iv)
 
         val cos = CipherOutputStream(fos, cipher)
+        var bytesProcessed = 0
         var b: Int
         val d = ByteArray(chunkSize)
         while (fis.read(d).also { b = it } != -1) {
             cos.write(d, 0, b)
+            bytesProcessed += b
+            progressListener?.invoke(bytesProcessed.toFloat() / contentLength)
         }
         cos.flush()
         cos.close()
@@ -220,10 +237,12 @@ class AES(
      * will try to decrypt the bytes using the key provided in the function.
      */
     @Throws(IOException::class, NoSuchAlgorithmException::class, NoSuchPaddingException::class, InvalidKeyException::class)
-    fun decryptFile(secretKey: SecretKey, encryptedFile: File, outputFile: File) {
+    fun decryptFile(secretKey: SecretKey, encryptedFile: File, outputFile: File, progressListener: ((Float) -> Unit)? = null) {
 
         val fis = FileInputStream(encryptedFile)
         val fos = FileOutputStream(outputFile)
+
+        val contentLength = encryptedFile.length()
 
         val iv = ByteArray(16)
 
@@ -234,11 +253,14 @@ class AES(
         cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
 
         val cis = CipherInputStream(fis, cipher)
+        var bytesProcessed = 0
         var b: Int
         val d = ByteArray(chunkSize)
 
         while (cis.read(d).also { b = it } != -1) {
             fos.write(d, 0, b)
+            bytesProcessed += b
+            progressListener?.invoke(bytesProcessed.toFloat() / contentLength)
         }
         fos.flush()
         fos.close()
