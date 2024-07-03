@@ -2,6 +2,7 @@ package com.asadullah.androidsecurity
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import com.asadullah.androidsecurity.enums.Efficiency
 import com.asadullah.handyutils.decodeFromBase64String
 import com.asadullah.handyutils.encodeToBase64String
 import java.io.File
@@ -13,7 +14,6 @@ import java.security.KeyStore
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import javax.crypto.Cipher
-import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
 import javax.crypto.KeyGenerator
 import javax.crypto.NoSuchPaddingException
@@ -23,10 +23,15 @@ import javax.crypto.spec.SecretKeySpec
 
 class AES(
     blockMode: String = KeyProperties.BLOCK_MODE_CBC,
-    padding: String = KeyProperties.ENCRYPTION_PADDING_PKCS7
+    padding: String = KeyProperties.ENCRYPTION_PADDING_PKCS7,
+    efficiency: Efficiency = Efficiency.Balanced
 ) {
 
-    private val chunkSize = 8192
+    private val bufferSizeInBytes = when (efficiency) {
+        Efficiency.HighPerformance -> 81920 // 80 KB
+        Efficiency.Balanced -> 20480        // 20 KB
+        Efficiency.MemoryEfficient -> 8192  //  8 KB
+    }
 
     private val algo = KeyProperties.KEY_ALGORITHM_AES
     private val keySize = 256
@@ -217,7 +222,7 @@ class AES(
         val cos = CipherOutputStream(fos, cipher)
         var bytesProcessed = 0
         var b: Int
-        val d = ByteArray(chunkSize)
+        val d = ByteArray(bufferSizeInBytes)
         while (fis.read(d).also { b = it } != -1) {
             cos.write(d, 0, b)
             bytesProcessed += b
@@ -252,10 +257,10 @@ class AES(
         val ivSpec = IvParameterSpec(iv)
         cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
 
-        val cis = CipherInputStream(fis, cipher)
+        val cis = ImprovedCipherInputStream(fis, cipher, bufferSizeInBytes)
         var bytesProcessed = 0
         var b: Int
-        val d = ByteArray(chunkSize)
+        val d = ByteArray(bufferSizeInBytes)
 
         while (cis.read(d).also { b = it } != -1) {
             fos.write(d, 0, b)

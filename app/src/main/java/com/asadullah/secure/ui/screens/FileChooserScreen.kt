@@ -1,5 +1,6 @@
 package com.asadullah.secure.ui.screens
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,12 +23,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.asadullah.androidsecurity.AES
+import com.asadullah.androidsecurity.enums.Efficiency
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Date
+import kotlin.time.measureTime
 
 @Composable
 fun MediaPickerRoot(navController: NavController) {
@@ -63,22 +66,34 @@ fun PickImage() {
             context.contentResolver.openInputStream(uri).use {
                 it?.copyTo(originalFile.outputStream())
             }
-            progressState = "Encrypting file..."
             val aes = AES()
             aes.generateAndStoreSecretKey("Champion")
             val secretKey = aes.getSecretKey("Champion")
             val fileName = Date().time.toString()
             val encryptedFile = File(encryptedFilesDir, "$fileName.crypt")
-            aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
-                println(progress)
+            progressState = "Encrypting file..."
+
+            val encryptionTime = measureTime {
+                aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
+                    Log.d("Progress", progress.toString())
+                }
             }
+
+            println("Encryption time: ${encryptionTime.inWholeSeconds} secs")
+
             progressState = "Encryption successful"
             delay(1000L)
-            progressState = "Decrypting file..."
             val decryptedFile = File(encryptedFilesDir, "decrypted_$fileName")
-            aes.decryptFile(secretKey, encryptedFile, decryptedFile) { progress ->
-                println(progress)
+            progressState = "Decrypting file..."
+
+            val decryptionTime = measureTime {
+                aes.decryptFile(secretKey!!, encryptedFile, decryptedFile) { progress ->
+                    Log.d("Progress", progress.toString())
+                }
             }
+
+            println("Decryption time: ${decryptionTime.inWholeSeconds} secs")
+
             progressState = "Decryption successful"
             delay(3000L)
             progressState = ""
@@ -115,22 +130,34 @@ fun PickVideo() {
             context.contentResolver.openInputStream(uri).use {
                 it?.copyTo(originalFile.outputStream())
             }
-            progressState = "Encrypting file..."
             val aes = AES()
             aes.generateAndStoreSecretKey("Champion")
             val secretKey = aes.getSecretKey("Champion")
             val fileName = Date().time.toString()
             val encryptedFile = File(encryptedFilesDir, "$fileName.crypt")
-            aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
-                println(progress)
+            progressState = "Encrypting file..."
+
+            val encryptionTime = measureTime {
+                aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
+                    Log.d("Progress", progress.toString())
+                }
             }
+
+            println("Encryption time: ${encryptionTime.inWholeSeconds} secs")
+
             progressState = "Encryption successful"
             delay(1000L)
-            progressState = "Decrypting file..."
             val decryptedFile = File(encryptedFilesDir, "decrypted_$fileName")
-            aes.decryptFile(secretKey, encryptedFile, decryptedFile) { progress ->
-                println(progress)
+            progressState = "Decrypting file..."
+
+            val decryptionTime = measureTime {
+                aes.decryptFile(secretKey!!, encryptedFile, decryptedFile) { progress ->
+                    Log.d("Progress", progress.toString())
+                }
             }
+
+            println("Decryption time: ${decryptionTime.inWholeSeconds} secs")
+
             progressState = "Decryption successful"
             delay(3000L)
             progressState = ""
@@ -173,16 +200,28 @@ fun PickDocument() {
             aes.generateAndStoreSecretKey("Champion")
             val secretKey = aes.getSecretKey("Champion")
             progressState = "Encrypting file..."
-            aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
-                println(progress)
+
+            val encryptionTime = measureTime {
+                aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
+                    Log.d("Progress", progress.toString())
+                }
             }
+
+            println("Encryption time: ${encryptionTime.inWholeSeconds} secs")
+
             progressState = "Encryption successful"
             delay(1000L)
             val decryptedFile = File(encryptedFilesDir, "decrypted_$fileName")
             progressState = "Decrypting file..."
-            aes.decryptFile(secretKey, encryptedFile, decryptedFile) { progress ->
-                println(progress)
+
+            val decryptionTime = measureTime {
+                aes.decryptFile(secretKey!!, encryptedFile, decryptedFile) { progress ->
+                    Log.d("Progress", progress.toString())
+                }
             }
+
+            println("Decryption time: ${decryptionTime.inWholeSeconds} secs")
+
             progressState = "Decryption successful"
             delay(3000L)
             progressState = ""
