@@ -55,6 +55,11 @@ class MainActivity : ComponentActivity() {
 
     private fun mainFunctionality() {
 
+        rsaCryptography()
+        aesCryptography()
+    }
+
+    fun rsaCryptography() {
         val message = "I solemnly swear that I am up to no good."
 
         val rsa = RSA()
@@ -62,6 +67,10 @@ class MainActivity : ComponentActivity() {
         println(encryptedText)
         val decryptedText = rsa.decryptString(encryptedText)
         println(decryptedText)
+    }
+
+    fun aesCryptography() {
+        val message = "I solemnly swear that I am up to no good."
 
         val aes = AES()
         val secretKey = aes.generateSecretKey()
