@@ -1,5 +1,5 @@
 # AndroidSecurity
-Making security easier
+Making security easier. AES and RSA security options are available.
 ## Project Level Gradle
 
 ### Groovy
