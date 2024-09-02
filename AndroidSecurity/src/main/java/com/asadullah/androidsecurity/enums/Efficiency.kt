@@ -1,7 +1,16 @@
 package com.asadullah.androidsecurity.enums
 
-enum class Efficiency {
-    HighPerformance,
-    Balanced,
-    MemoryEfficient
+import com.asadullah.androidsecurity.annotations.Warning
+
+sealed interface Efficiency {
+    data object HighPerformance : Efficiency
+    data object Balanced : Efficiency
+    data object MemoryEfficient : Efficiency
+
+    /**
+     * Might break, depending upon the value of bufferSize. Try to not
+     * exceed from 204,800.
+     */
+    @Warning
+    data class CustomPerformance(val bufferSize: Int) : Efficiency
 }

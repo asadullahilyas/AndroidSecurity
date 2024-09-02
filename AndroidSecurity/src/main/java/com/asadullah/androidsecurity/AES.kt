@@ -2,6 +2,7 @@ package com.asadullah.androidsecurity
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import com.asadullah.androidsecurity.annotations.Warning
 import com.asadullah.androidsecurity.enums.Efficiency
 import com.asadullah.handyutils.decodeFromBase64String
 import com.asadullah.handyutils.encodeToBase64String
@@ -31,6 +32,7 @@ class AES(
         Efficiency.HighPerformance -> 81920 // 80 KB
         Efficiency.Balanced -> 20480        // 20 KB
         Efficiency.MemoryEfficient -> 8192  //  8 KB
+        is Efficiency.CustomPerformance -> efficiency.bufferSize
     }
 
     private val algo = KeyProperties.KEY_ALGORITHM_AES
