@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.asadullah.androidsecurity.RSA
+import com.asadullah.handyutils.ifNeitherNullNorEmptyNorBlank
 import com.asadullah.secure.MainActivity
 import com.asadullah.secure.Screen
 import com.asadullah.secure.ui.theme.AndroidSecurityTheme
@@ -59,7 +60,9 @@ fun PlainTextScreen(
 
         val onValueChangeEncrypt: (String) -> Unit = {
             textToEncrypt = it
-            output = rsa.encryptString(it)
+            output = textToEncrypt.ifNeitherNullNorEmptyNorBlank { value ->
+                rsa.encryptString(value.replace("\\n", ""))
+            } ?: ""
         }
 
         CryptoTextField(
@@ -77,7 +80,9 @@ fun PlainTextScreen(
         val onValueChangeDecrypt: (String) -> Unit = {
             textToDecrypt = it
             try {
-                output = rsa.decryptString(it)
+                output = textToDecrypt.ifNeitherNullNorEmptyNorBlank { value ->
+                    rsa.decryptString(value.replace("\\n", ""))
+                } ?: ""
             } catch (e: IllegalArgumentException) {
                 Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
             }
@@ -102,6 +107,16 @@ fun PlainTextScreen(
             Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
         }) {
             Text(text = "Copy Output")
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        ElevatedButton(onClick = {
+            textToEncrypt = ""
+            textToDecrypt = ""
+            output = ""
+        }) {
+            Text(text = "Clear")
         }
 
         Spacer(modifier = Modifier.height(80.dp))
