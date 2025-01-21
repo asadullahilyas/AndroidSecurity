@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.asadullah.androidsecurity.RSA
+import com.asadullah.androidsecurity.AES
 import com.asadullah.handyutils.ifNeitherNullNorEmptyNorBlank
 import com.asadullah.secure.MainActivity
 import com.asadullah.secure.Screen
@@ -46,9 +46,11 @@ fun PlainTextScreen(
 
         val context = LocalContext.current
 
-        val rsa = remember {
+        /*val rsa = remember {
             RSA()
-        }
+        }*/
+
+        val aes = remember { AES() }
 
         var textToEncrypt by remember {
             mutableStateOf("")
@@ -61,7 +63,7 @@ fun PlainTextScreen(
         val onValueChangeEncrypt: (String) -> Unit = {
             textToEncrypt = it
             output = textToEncrypt.ifNeitherNullNorEmptyNorBlank { value ->
-                rsa.encryptString(value.replace("\\n", ""))
+                aes.encryptString("", value.replace("\\n", ""))
             } ?: ""
         }
 
@@ -81,7 +83,7 @@ fun PlainTextScreen(
             textToDecrypt = it
             try {
                 output = textToDecrypt.ifNeitherNullNorEmptyNorBlank { value ->
-                    rsa.decryptString(value.replace("\\n", ""))
+                    aes.decryptString("", value.replace("\\n", ""))
                 } ?: ""
             } catch (e: IllegalArgumentException) {
                 Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
