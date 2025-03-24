@@ -196,7 +196,7 @@ fun PickDocument() {
             }
             val fileName = Date().time.toString()
             val encryptedFile = File(encryptedFilesDir, "$fileName.crypt")
-            val aes = AES(efficiency = Efficiency.CustomPerformance(20))
+            val aes = AES(efficiency = Efficiency.HighPerformance)
             aes.generateAndStoreSecretKey("Champion")
             val secretKey = aes.getSecretKey("Champion")
             progressState = "Encrypting file..."
