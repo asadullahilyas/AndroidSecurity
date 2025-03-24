@@ -52,6 +52,8 @@ fun PlainTextScreen(
 
         val aes = remember { AES() }
 
+        val secretKey = remember { aes.generateSecretKey() }
+
         var textToEncrypt by remember {
             mutableStateOf("")
         }
@@ -63,7 +65,7 @@ fun PlainTextScreen(
         val onValueChangeEncrypt: (String) -> Unit = {
             textToEncrypt = it
             output = textToEncrypt.ifNeitherNullNorEmptyNorBlank { value ->
-                aes.encryptString("", value.replace("\\n", ""))
+                aes.encryptString(secretKey, value.replace("\\n", ""))
             } ?: ""
         }
 
@@ -83,7 +85,7 @@ fun PlainTextScreen(
             textToDecrypt = it
             try {
                 output = textToDecrypt.ifNeitherNullNorEmptyNorBlank { value ->
-                    aes.decryptString("", value.replace("\\n", ""))
+                    aes.decryptString(secretKey, value.replace("\\n", ""))
                 } ?: ""
             } catch (e: IllegalArgumentException) {
                 Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
