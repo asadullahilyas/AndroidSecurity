@@ -2,10 +2,6 @@ package com.asadullah.androidsecurity
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import com.asadullah.handyutils.chunked
-import com.asadullah.handyutils.decodeFromBase64String
-import com.asadullah.handyutils.encodeToBase64String
-import com.asadullah.handyutils.findWithObject
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -21,6 +17,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.math.BigInteger
+import java.security.Key
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -104,12 +101,12 @@ class RSA {
     fun getPublicKey() = keyPair.public.encoded.encodeToBase64String()
     fun getPrivateKey() = keyPair.private.encoded.encodeToBase64String()
 
-    fun encryptString(plainText: String): String {
+    fun encryptString(plainText: String, key: Key? = null): String {
 
         if (plainText.isEmpty()) return ""
 
         val cipher = Cipher.getInstance(transformation)
-        cipher.init(Cipher.ENCRYPT_MODE, keyPair.public)
+        cipher.init(Cipher.ENCRYPT_MODE, key ?: keyPair.public)
         return plainText
             .chunked(245)
             .joinToString("\\|/") { chunk ->
@@ -117,12 +114,12 @@ class RSA {
             }
     }
 
-    fun decryptString(encryptedText: String): String {
+    fun decryptString(encryptedText: String, key: Key? = null): String {
 
         if (encryptedText.isEmpty()) return ""
 
         val cipher = Cipher.getInstance(transformation)
-        cipher.init(Cipher.DECRYPT_MODE, keyPair.private)
+        cipher.init(Cipher.DECRYPT_MODE, key ?: keyPair.private)
         return encryptedText
             .split("\\|/")
             .joinToString("") { chunk ->
@@ -130,9 +127,9 @@ class RSA {
             }
     }
 
-    fun encryptData(plainBytes: ByteArray): ByteArray {
+    fun encryptData(plainBytes: ByteArray, key: Key? = null): ByteArray {
         val cipher = Cipher.getInstance(transformation)
-        cipher.init(Cipher.ENCRYPT_MODE, keyPair.public)
+        cipher.init(Cipher.ENCRYPT_MODE, key ?: keyPair.public)
         return plainBytes
             .toTypedArray()
             .chunked(512)
@@ -142,9 +139,9 @@ class RSA {
             .flatten()
     }
 
-    fun decryptData(encryptedBytes: ByteArray): ByteArray {
+    fun decryptData(encryptedBytes: ByteArray, key: Key? = null): ByteArray {
         val cipher = Cipher.getInstance(transformation)
-        cipher.init(Cipher.DECRYPT_MODE, keyPair.private)
+        cipher.init(Cipher.DECRYPT_MODE, key ?: keyPair.private)
         return encryptedBytes
             .toTypedArray()
             .chunked(512)
