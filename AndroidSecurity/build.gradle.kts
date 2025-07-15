@@ -1,7 +1,7 @@
 plugins {
-    id("com.android.library")
-    id("org.jetbrains.kotlin.android")
-    id("maven-publish")
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.maven.publish)
 }
 
 afterEvaluate {
@@ -11,7 +11,7 @@ afterEvaluate {
                 from (components["release"])
                 groupId = "com.github.asadullahilyas"
                 artifactId = "AndroidSecurity"
-                version = "1.0.6"
+                version = "1.0.7"
             }
         }
     }
@@ -19,7 +19,7 @@ afterEvaluate {
 
 android {
     namespace = "com.asadullah.androidsecurity"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 23
@@ -44,12 +44,11 @@ android {
 }
 
 dependencies {
-
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.google.android.material:material:1.12.0")
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.67")
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    implementation(libs.core.ktx)
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.bcpkix)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.espresso.core)
 }
