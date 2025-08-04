@@ -27,16 +27,18 @@ allprojects {
 ### Groovy
 ``` Groovy
 dependencies {
-    implementation 'com.github.asadullahilyas:AndroidSecurity:1.0.7'
+    implementation 'com.github.asadullahilyas:AndroidSecurity:1.0.8'
 }
 ```
 
 ### Kotlin
 ``` Kotlin
 dependencies {
-    implementation("com.github.asadullahilyas:AndroidSecurity:1.0.7")
+    implementation("com.github.asadullahilyas:AndroidSecurity:1.0.8")
 }
 ```
+
+[![](https://jitpack.io/v/asadullahilyas/AndroidSecurity.svg)](https://jitpack.io/#asadullahilyas/AndroidSecurity)
 
 ## AES
 For AES encryption/decryption, you need to create an AES class object. Then, you can generate a new secure and random key by calling the following function:
