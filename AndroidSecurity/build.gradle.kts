@@ -11,7 +11,7 @@ afterEvaluate {
                 from (components["release"])
                 groupId = "com.github.asadullahilyas"
                 artifactId = "AndroidSecurity"
-                version = "1.0.7"
+                version = "1.0.8"
             }
         }
     }

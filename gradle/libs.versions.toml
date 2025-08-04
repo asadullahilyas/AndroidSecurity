@@ -24,7 +24,7 @@ androidx-junit = "1.2.1"
 espresso-core = "3.6.1"
 
 # Plugins
-android-gradle = "8.11.1"
+android-gradle = "8.12.0"
 kotlin = "2.0.0"
 kotlin-compose = "2.0.0"
 

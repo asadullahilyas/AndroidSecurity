@@ -20,9 +20,9 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 class AES(
-    blockMode: String = KeyProperties.BLOCK_MODE_CBC,
-    padding: String = KeyProperties.ENCRYPTION_PADDING_PKCS7,
-    efficiency: Efficiency = Efficiency.Balanced
+    val blockMode: String = KeyProperties.BLOCK_MODE_CBC,
+    val padding: String = KeyProperties.ENCRYPTION_PADDING_PKCS7,
+    val efficiency: Efficiency = Efficiency.Balanced
 ) {
 
     private val bufferSizeInBytes = when (efficiency) {
@@ -34,7 +34,7 @@ class AES(
 
     private val algo = KeyProperties.KEY_ALGORITHM_AES
     private val keySize = 256
-    private val cipherTransformation = "${KeyProperties.KEY_ALGORITHM_AES}/$blockMode/$padding"
+    private val cipherTransformation = "$algo/$blockMode/$padding"
 
     private fun convertKeyToString(secretKey: SecretKey): String {
         return secretKey.encoded.encodeToBase64String()
@@ -58,7 +58,7 @@ class AES(
 
     fun generateAndStoreSecretKey(alias: String) {
         val keyGenerator = KeyGenerator.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore"
+            algo, "AndroidKeyStore"
         )
         keyGenerator.init(
             KeyGenParameterSpec
@@ -67,8 +67,8 @@ class AES(
                     KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
                 )
                 .setKeySize(keySize)
-                .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
+                .setBlockModes(blockMode)
+                .setEncryptionPaddings(padding)
                 .build()
         )
         keyGenerator.generateKey()
