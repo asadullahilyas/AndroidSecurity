@@ -16,6 +16,7 @@ import javax.crypto.CipherOutputStream
 import javax.crypto.KeyGenerator
 import javax.crypto.NoSuchPaddingException
 import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
@@ -26,9 +27,9 @@ class AES(
 ) {
 
     private val bufferSizeInBytes = when (efficiency) {
-        Efficiency.HighPerformance -> 81920 // 80 KB
-        Efficiency.Balanced -> 20480        // 20 KB
-        Efficiency.MemoryEfficient -> 8192  //  8 KB
+        Efficiency.HighPerformance      -> 81920 // 80 KB
+        Efficiency.Balanced             -> 20480 // 20 KB
+        Efficiency.MemoryEfficient      -> 8192  //  8 KB
         is Efficiency.CustomPerformance -> efficiency.bufferSize
     }
 
@@ -100,12 +101,16 @@ class AES(
 
     fun decryptString(secretKey: SecretKey, encryptedText: String): String {
         val cipher = Cipher.getInstance(cipherTransformation)
-        val encryptedTextArray = encryptedText.split("\\|/")
-        val ivSpec = IvParameterSpec(encryptedTextArray[0].decodeFromBase64String())
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
-        val encryptedBytes = encryptedTextArray[1].decodeFromBase64String()
-        val plainTextByteArray = cipher.doFinal(encryptedBytes)
-        return String(plainTextByteArray, Charsets.UTF_8)
+        val parts = encryptedText.split("\\|/")
+        val ivBytes = parts[0].decodeFromBase64String()
+        val paramSpec = if (blockMode == KeyProperties.BLOCK_MODE_GCM) {
+            GCMParameterSpec(128, ivBytes)
+        } else {
+            IvParameterSpec(ivBytes)
+        }
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, paramSpec)
+        val encryptedBytes = parts[1].decodeFromBase64String()
+        return String(cipher.doFinal(encryptedBytes), Charsets.UTF_8)
     }
 
     fun encryptData(secretKey: ByteArray, plainBytes: ByteArray): AESEncryptionResult {
@@ -123,17 +128,20 @@ class AES(
 
     fun decryptData(secretKey: ByteArray, iv: ByteArray, encryptedBytes: ByteArray): ByteArray {
         val key = convertByteArrayToSecretKey(secretKey)
-        val ivSpec = IvParameterSpec(iv)
+        val paramSpec = if (blockMode == KeyProperties.BLOCK_MODE_GCM) {
+            GCMParameterSpec(128, iv)
+        } else {
+            IvParameterSpec(iv)
+        }
         val cipher = Cipher.getInstance(cipherTransformation)
-        cipher.init(Cipher.DECRYPT_MODE, key, ivSpec)
-        val plainTextByteArray = cipher.doFinal(encryptedBytes)
-        return plainTextByteArray
+        cipher.init(Cipher.DECRYPT_MODE, key, paramSpec)
+        return cipher.doFinal(encryptedBytes)
     }
 
     /**
      * This function is used to encrypt files. The IV will be appended to the start of the file
-     * in first 16 bytes. These bytes are the not part of original file. When decrypting, use
-     * first 16 bytes to extract IV, and use it to decrypt the rest of the bytes. If you are
+     * in first N bytes (12 for GCM, 16 for CBC). These bytes are the not part of original file. When decrypting, use
+     * first N bytes to extract IV, and use it to decrypt the rest of the bytes. If you are
      * using the `fun decryptFile(secretKey: ByteArray, encryptedFile: File, outputFile: File)`
      * for decryption, then you don't have to worry about it.
      */
@@ -148,7 +156,7 @@ class AES(
     }
 
     /***
-     * This function will extract out first 16 bytes of the file and considers them
+     * This function will extract out first N bytes of the file and considers them
      * IV. The rest of the bytes are considered to be the encrypted bytes and it
      * will try to decrypt the bytes using the key provided in the function.
      */
@@ -164,8 +172,8 @@ class AES(
 
     /**
      * This function is used to encrypt files. The IV will be appended to the start of the file
-     * in first 16 bytes. These bytes are the not part of original file. When decrypting, use
-     * first 16 bytes to extract IV, and use it to decrypt the rest of the bytes. If you are
+     * in first N bytes (12 for GCM, 16 for CBC). These bytes are the not part of original file. When decrypting, use
+     * first N bytes to extract IV, and use it to decrypt the rest of the bytes. If you are
      * using the `fun decryptFile(secretKey: ByteArray, encryptedFile: File, outputFile: File)`
      * for decryption, then you don't have to worry about it.
      */
@@ -180,7 +188,7 @@ class AES(
     }
 
     /***
-     * This function will extract out first 16 bytes of the file and considers them
+     * This function will extract out first N bytes of the file and considers them
      * IV. The rest of the bytes are considered to be the encrypted bytes and it
      * will try to decrypt the bytes using the key provided in the function.
      */
@@ -196,8 +204,8 @@ class AES(
 
     /**
      * This function is used to encrypt files. The IV will be appended to the start of the file
-     * in first 16 bytes. These bytes are the not part of original file. When decrypting, use
-     * first 16 bytes to extract IV, and use it to decrypt the rest of the bytes. If you are
+     * in first N bytes (12 for GCM, 16 for CBC). These bytes are the not part of original file. When.decrypting, use
+     * first N bytes to extract IV, and use it to decrypt the rest of the bytes. If you are
      * using the `fun decryptFile(secretKey: ByteArray, encryptedFile: File, outputFile: File)`
      * for decryption, then you don't have to worry about it.
      */
@@ -206,70 +214,65 @@ class AES(
 
         val encryptedFile = outputFile ?: File(file.parentFile, "${file.name}.crypt")
 
-        val fis = FileInputStream(file)
-        val fos = FileOutputStream(encryptedFile)
-
-        val contentLength = file.length()
-
-        val cipher = Cipher.getInstance(cipherTransformation)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-        val iv = cipher.iv
-
-        // Adding Initialization Vector at the top of file.
-        fos.write(iv)
-
-        val cos = CipherOutputStream(fos, cipher)
-        var bytesProcessed = 0
-        var b: Int
-        val d = ByteArray(bufferSizeInBytes)
-        while (fis.read(d).also { b = it } != -1) {
-            cos.write(d, 0, b)
-            bytesProcessed += b
-            progressListener?.invoke(bytesProcessed.toFloat() / contentLength)
+        FileInputStream(file).use { fis ->
+            FileOutputStream(encryptedFile).use { fos ->
+                val contentLength = file.length()
+                val cipher = Cipher.getInstance(cipherTransformation)
+                cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+                val iv = cipher.iv
+                // Adding Initialization Vector at the top of file.
+                fos.write(iv)
+                CipherOutputStream(fos, cipher).use { cos ->
+                    var bytesProcessed = 0L
+                    val buffer = ByteArray(bufferSizeInBytes)
+                    var read: Int
+                    while (fis.read(buffer).also { read = it } != -1) {
+                        cos.write(buffer, 0, read)
+                        bytesProcessed += read
+                        progressListener?.invoke(bytesProcessed.toFloat() / contentLength)
+                    }
+                }
+            }
         }
-        cos.flush()
-        cos.close()
-        fos.close()
-        fis.close()
-
-        return encryptedFile
+        return File(file.parentFile, "${file.name}.crypt")
     }
 
     /***
-     * This function will extract out first 16 bytes of the file and considers them
+     * This function will extract out first N bytes of the file and considers them
      * IV. The rest of the bytes are considered to be the encrypted bytes and it
-     * will try to decrypt the bytes using the key provided in the function.
+     * will try to.decrypt the bytes using the key provided in the function.
      */
     @Throws(IOException::class, NoSuchAlgorithmException::class, NoSuchPaddingException::class, InvalidKeyException::class)
     fun decryptFile(secretKey: SecretKey, encryptedFile: File, outputFile: File, progressListener: ((Float) -> Unit)? = null) {
 
-        val fis = FileInputStream(encryptedFile)
-        val fos = FileOutputStream(outputFile)
+        FileInputStream(encryptedFile).use { fis ->
+            FileOutputStream(outputFile).use { fos ->
+                val contentLength = encryptedFile.length()
+                // Determine IV length
+                val ivLength = if (blockMode == KeyProperties.BLOCK_MODE_GCM) 12 else 16
+                val iv = ByteArray(ivLength)
+                fis.read(iv)
 
-        val contentLength = encryptedFile.length()
+                val cipher = Cipher.getInstance(cipherTransformation)
+                val paramSpec = if (blockMode == KeyProperties.BLOCK_MODE_GCM) {
+                    GCMParameterSpec(128, iv)
+                } else {
+                    IvParameterSpec(iv)
+                }
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, paramSpec)
 
-        val iv = ByteArray(16)
-
-        fis.read(iv, 0, iv.size)
-
-        val cipher = Cipher.getInstance(cipherTransformation)
-        val ivSpec = IvParameterSpec(iv)
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
-
-        val cis = ImprovedCipherInputStream(fis, cipher, bufferSizeInBytes)
-        var bytesProcessed = 0
-        var b: Int
-        val d = ByteArray(bufferSizeInBytes)
-
-        while (cis.read(d).also { b = it } != -1) {
-            fos.write(d, 0, b)
-            bytesProcessed += b
-            progressListener?.invoke(bytesProcessed.toFloat() / contentLength)
+                ImprovedCipherInputStream(fis, cipher, bufferSizeInBytes).use { cis ->
+                    var bytesProcessed = 0L
+                    val buffer = ByteArray(bufferSizeInBytes)
+                    var read: Int
+                    while (cis.read(buffer).also { read = it } != -1) {
+                        fos.write(buffer, 0, read)
+                        bytesProcessed += read
+                        progressListener?.invoke(bytesProcessed.toFloat() / contentLength)
+                    }
+                }
+            }
         }
-        fos.flush()
-        fos.close()
-        cis.close()
-        fis.close()
     }
 
     data class AESEncryptionResult(val iv: ByteArray, val encryptedMessage: ByteArray) {
