@@ -22,13 +22,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.asadullah.androidsecurity.AES
-import com.asadullah.androidsecurity.enums.Efficiency
+import com.asadullah.androidsecurity.aes.AES
+import com.asadullah.androidsecurity.sha256
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileInputStream
+import java.security.MessageDigest
 import java.util.Date
 import kotlin.time.measureTime
 
@@ -66,7 +68,7 @@ fun PickImage() {
             context.contentResolver.openInputStream(uri).use {
                 it?.copyTo(originalFile.outputStream())
             }
-            val aes = AES()
+            val aes = AES.CBC()
             aes.generateAndStoreSecretKey("Champion")
             val secretKey = aes.getSecretKey("Champion")
             val fileName = Date().time.toString()
@@ -130,7 +132,7 @@ fun PickVideo() {
             context.contentResolver.openInputStream(uri).use {
                 it?.copyTo(originalFile.outputStream())
             }
-            val aes = AES()
+            val aes = AES.CBC()
             aes.generateAndStoreSecretKey("Champion")
             val secretKey = aes.getSecretKey("Champion")
             val fileName = Date().time.toString()
@@ -189,40 +191,69 @@ fun PickDocument() {
             val encryptedFilesDir = File(context.filesDir, "Encrypted")
             encryptedFilesDir.mkdirs()
             val originalFile = File(encryptedFilesDir, uri.pathSegments.last())
+
+            val originalHash = originalFile.sha256()
+
             progressState = "Copying file..."
             delay(500L)
+            progressState = "Encrypting file..."
+
             context.contentResolver.openInputStream(uri).use {
                 it?.copyTo(originalFile.outputStream())
             }
-            val fileName = Date().time.toString()
-            val encryptedFile = File(encryptedFilesDir, "$fileName.crypt")
-            val aes = AES(efficiency = Efficiency.HighPerformance)
-            aes.generateAndStoreSecretKey("Champion")
-            val secretKey = aes.getSecretKey("Champion")
-            progressState = "Encrypting file..."
 
-            val encryptionTime = measureTime {
-                aes.encryptFile(secretKey!!, originalFile, encryptedFile) { progress ->
-                    Log.d("Progress", progress.toString())
+            val fileName = Date().time.toString()
+            val encryptedFileCBC = File(encryptedFilesDir, "CBC_$fileName.crypt")
+            val encryptedFileGCM = File(encryptedFilesDir, "GCM_$fileName.crypt")
+
+            val cbc = AES.CBC()
+            cbc.generateAndStoreSecretKey("Champion")
+            val secretKeyCBC = cbc.getSecretKey("Champion")
+            val encryptionTimeCBC = measureTime {
+                cbc.encryptFile(secretKeyCBC!!, originalFile, encryptedFileCBC) { progress ->
+//                    println("Progress: $progress")
                 }
             }
 
-            println("Encryption time: ${encryptionTime.inWholeSeconds} secs")
+            println("CBC Encryption time: ${encryptionTimeCBC.inWholeMilliseconds} millis")
+
+            val gcm = AES.GCM()
+            val secretKeyGCM = "y821CF1nkZq/WZjkFHJFinl9IZuGspEbRj97hrFJq2I="
+            val encryptionTimeGCM = measureTime {
+                gcm.encryptFile(secretKeyGCM, originalFile, encryptedFileGCM) { progress ->
+//                    println("Progress: $progress")
+                }
+            }
+
+            println("GCM Encryption time: ${encryptionTimeGCM.inWholeMilliseconds} millis")
 
             progressState = "Encryption successful"
             delay(1000L)
-            val decryptedFile = File(encryptedFilesDir, "decrypted_$fileName")
             progressState = "Decrypting file..."
 
-            val decryptionTime = measureTime {
-                aes.decryptFile(secretKey!!, encryptedFile, decryptedFile) { progress ->
-                    Log.d("Progress", progress.toString())
+            val decryptedFileCBC = File(encryptedFilesDir, "CBC_decrypted_$fileName")
+            val decryptionTimeCBC = measureTime {
+                cbc.decryptFile(secretKeyCBC!!, encryptedFileCBC, decryptedFileCBC) { progress ->
+//                    println("Progress: $progress")
                 }
             }
 
-            println("Decryption time: ${decryptionTime.inWholeSeconds} secs")
+            println("CBC Decryption time: ${decryptionTimeCBC.inWholeMilliseconds} millis")
+
+            val decryptedFileGCM = File(encryptedFilesDir, "GCM_decrypted_$fileName")
+            val decryptionTimeGCM = measureTime {
+                gcm.decryptFile(secretKeyGCM, encryptedFileGCM, decryptedFileGCM) { progress ->
+//                    println("Progress: $progress")
+                }
+            }
+
+            println("GCM Decryption time: ${decryptionTimeGCM.inWholeMilliseconds} millis")
+
+            val decryptedHash = decryptedFileGCM.sha256()
 
             progressState = "Decryption successful"
+            delay(1000L)
+            progressState = if (originalHash == decryptedHash) "Hash matched" else "Hash not matched"
             delay(3000L)
             progressState = ""
         }

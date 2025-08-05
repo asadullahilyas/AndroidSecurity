@@ -1,6 +1,9 @@
 package com.asadullah.androidsecurity
 
 import android.os.Build
+import java.io.File
+import java.io.FileInputStream
+import java.security.MessageDigest
 import java.util.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -56,4 +59,21 @@ inline fun <reified T> Array<T>.chunked(chunkSize: Int): Array<Array<out T>> {
             }
         }
     }
+}
+
+fun File.sha256(): String {
+    require(exists()) { "File '${absolutePath}' does not exist." }
+    require(isFile) { "'${absolutePath}' is not a file." }
+    require(canRead()) { "File '${absolutePath}' is not readable." }
+
+    val digest = MessageDigest.getInstance("SHA-256")
+    FileInputStream(this).use { input ->
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        var bytesRead: Int
+        while (input.read(buffer).also { bytesRead = it } != -1) {
+            digest.update(buffer, 0, bytesRead)
+        }
+    }
+
+    return digest.digest().joinToString("") { "%02x".format(it) }
 }

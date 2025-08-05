@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.asadullah.androidsecurity.AES
+import com.asadullah.androidsecurity.aes.AES
 import com.asadullah.handyutils.ifNeitherNullNorEmptyNorBlank
 import com.asadullah.secure.MainActivity
 import com.asadullah.secure.Screen
@@ -50,7 +50,7 @@ fun PlainTextScreen(
             RSA()
         }*/
 
-        val aes = remember { AES() }
+        val aes = remember { AES.CBC() }
 
         val secretKey = remember { aes.generateSecretKey() }
 
