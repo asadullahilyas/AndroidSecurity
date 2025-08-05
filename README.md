@@ -27,14 +27,14 @@ allprojects {
 ### Groovy
 ``` Groovy
 dependencies {
-    implementation 'com.github.asadullahilyas:AndroidSecurity:1.0.8'
+    implementation 'com.github.asadullahilyas:AndroidSecurity:1.0.9'
 }
 ```
 
 ### Kotlin
 ``` Kotlin
 dependencies {
-    implementation("com.github.asadullahilyas:AndroidSecurity:1.0.8")
+    implementation("com.github.asadullahilyas:AndroidSecurity:1.0.9")
 }
 ```
 

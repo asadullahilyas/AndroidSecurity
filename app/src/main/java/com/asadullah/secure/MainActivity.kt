@@ -14,7 +14,7 @@ import androidx.core.content.ContextCompat.getSystemService
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.asadullah.androidsecurity.AES
+import com.asadullah.androidsecurity.aes.AES
 import com.asadullah.androidsecurity.RSA
 import com.asadullah.secure.ui.screens.MediaPickerRoot
 import com.asadullah.secure.ui.screens.PlainTextScreen
@@ -54,7 +54,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun mainFunctionality() {
-
         rsaCryptography()
         aesCryptography()
     }
@@ -64,26 +63,38 @@ class MainActivity : ComponentActivity() {
 
         val rsa = RSA()
         val encryptedText = rsa.encryptString(message)
-        println(encryptedText)
+        println("RSA => $encryptedText")
         val decryptedText = rsa.decryptString(encryptedText)
-        println(decryptedText)
+        println("RSA => $decryptedText")
     }
 
     fun aesCryptography() {
         val message = "I solemnly swear that I am up to no good."
 
-        val aes = AES()
-        val secretKey = aes.generateSecretKey()
-        val aesEncryptedText = aes.encryptString(secretKey, message)
-        println(aesEncryptedText)
-        val aesDecryptedText = aes.decryptString(secretKey, aesEncryptedText)
-        println(aesDecryptedText)
+        val cbc = AES.CBC()
+        val gcm = AES.GCM()
+        val secretKeyCBC = cbc.generateSecretKey()
+        val secretKeyGCM = gcm.generateSecretKey()
 
-        aes.generateAndStoreSecretKey("abc")
-        val key = aes.getSecretKey("abc")
+        val aesEncryptedTextCBC = cbc.encryptString(secretKeyCBC, message)
+        println("CBC => $aesEncryptedTextCBC")
+        val aesEncryptedTextGCM = gcm.encryptString(secretKeyGCM, message)
+        println("GCM => $aesEncryptedTextGCM")
 
-        val encrypted = aes.encryptString(key!!, "Hello")
-        println(aes.decryptString(key, encrypted))
+        val aesDecryptedTextCBC = cbc.decryptString(secretKeyCBC, aesEncryptedTextCBC)
+        println("CBC => $aesDecryptedTextCBC")
+
+        val aesDecryptedTextGCM = gcm.decryptString(secretKeyGCM, aesEncryptedTextGCM)
+        println("GCM => $aesDecryptedTextGCM")
+
+        cbc.generateAndStoreSecretKey("abc")
+        val cbcKeyFromKeyStore = cbc.getSecretKey("abc")
+
+        val encryptedCBCKeyStore = cbc.encryptString(cbcKeyFromKeyStore!!, "Hello")
+        println("CBC KeyStore => $encryptedCBCKeyStore")
+
+        val decryptedCBCKeyStore = cbc.decryptString(cbcKeyFromKeyStore, encryptedCBCKeyStore)
+        println("CBC KeyStore => $decryptedCBCKeyStore")
     }
 }
 

@@ -11,7 +11,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NullCipher;
 import javax.crypto.ShortBufferException;
 
-class ImprovedCipherInputStream extends FilterInputStream {
+public class ImprovedCipherInputStream extends FilterInputStream {
 
     private static final int DEFAULT_BUFFER_SIZE = 512;
 
