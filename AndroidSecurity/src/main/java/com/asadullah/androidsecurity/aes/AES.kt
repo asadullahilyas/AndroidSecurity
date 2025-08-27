@@ -17,6 +17,7 @@ import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.security.spec.AlgorithmParameterSpec
 import javax.crypto.Cipher
+import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
 import javax.crypto.KeyGenerator
 import javax.crypto.NoSuchPaddingException
@@ -42,7 +43,7 @@ sealed class AES(
 
     class CBC(
         padding: String = KeyProperties.ENCRYPTION_PADDING_PKCS7,
-        efficiency: Efficiency = Efficiency.Balanced,
+        efficiency: Efficiency = Efficiency.Default,
     ) : AES(
         blockMode = KeyProperties.BLOCK_MODE_CBC,
         padding = padding,
@@ -110,7 +111,12 @@ sealed class AES(
                     }
                     cipher.init(Cipher.DECRYPT_MODE, secretKey, paramSpec)
 
-                    ImprovedCipherInputStream(fis, cipher, bufferSizeInBytes).use { cis ->
+                    val cipherInputStream = if (efficiency == Efficiency.Default) {
+                        CipherInputStream(fis, cipher)
+                    } else {
+                        ImprovedCipherInputStream(fis, cipher, bufferSizeInBytes)
+                    }
+                    cipherInputStream.use { cis ->
                         var bytesProcessed = 0L
                         val buffer = ByteArray(bufferSizeInBytes)
                         var read: Int
@@ -127,7 +133,7 @@ sealed class AES(
     }
 
     class GCM(
-        efficiency: Efficiency = Efficiency.Balanced,
+        efficiency: Efficiency = Efficiency.Default,
     ) : AES(
         blockMode = KeyProperties.BLOCK_MODE_GCM,
         padding = KeyProperties.ENCRYPTION_PADDING_NONE,
@@ -198,6 +204,7 @@ sealed class AES(
     }
 
     protected val bufferSizeInBytes = when (efficiency) {
+        Efficiency.Default              -> 512   // 0.5 KB
         Efficiency.HighPerformance      -> 81920 // 80 KB
         Efficiency.Balanced             -> 20480 // 20 KB
         Efficiency.MemoryEfficient      -> 8192  //  8 KB
