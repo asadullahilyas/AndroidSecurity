@@ -27,23 +27,23 @@ allprojects {
 ### Groovy
 ``` Groovy
 dependencies {
-    implementation 'com.github.asadullahilyas:AndroidSecurity:1.0.9'
+    implementation 'com.github.asadullahilyas:AndroidSecurity:1.1.0'
 }
 ```
 
 ### Kotlin
 ``` Kotlin
 dependencies {
-    implementation("com.github.asadullahilyas:AndroidSecurity:1.0.9")
+    implementation("com.github.asadullahilyas:AndroidSecurity:1.1.0")
 }
 ```
 
 [![](https://jitpack.io/v/asadullahilyas/AndroidSecurity.svg)](https://jitpack.io/#asadullahilyas/AndroidSecurity)
 
 ## AES
-For AES encryption/decryption, you need to create an AES class object. Then, you can generate a new secure and random key by calling the following function:
+For AES encryption/decryption, you need to create an AES class object. There are two block mechanism of AES that are currently supported. One is GCM and one is CBC. You can use either one of them, depending on your requirement. Then, you can generate a new secure and random key by calling the following function:
 ``` Kotlin
-val aes = AES()
+val aes = AES.GCM()
 val newRandomKey = aes.generateSecretKey()
 ```
 ### String Security
@@ -63,13 +63,12 @@ val decryptedByteArray = aes.decryptData(newRandomKey, encrypted)
 ### File Security
 Use the following function to encrypt/decrypt a File with the same key:
 ``` Kotlin
-val byteArrayKey = Base64.getDecoder().decode(newRandomKey)
 val fileToEncrypt = File("dir", "file")
-val encryptedFile = aes.encryptFile(byteArrayKey, fileToEncrypt) { progress ->
+val encryptedFile = aes.encryptFile(newRandomKey, fileToEncrypt) { progress ->
     // Encryption progress
 }
 val decryptedFile = File("newDir", "newFile")
-aes.decryptData(byteArrayKey, encryptedFile, decryptedFile) { progress ->
+aes.decryptData(newRandomKey, encryptedFile, decryptedFile) { progress ->
     // Decryption progress
 }
 ```
